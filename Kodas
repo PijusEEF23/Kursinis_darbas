@@ -1,0 +1,91 @@
+import unittest
+import json
+
+class Converter:
+    def __init__(self):
+        pass
+
+    def convert(self, input):
+        pass
+
+class RomanDecimalConverter(Converter):
+    def __init__(self, parameter_file):
+        super().__init__()
+        with open(parameter_file, 'r') as f:
+            parameters = json.load(f)
+        self.roman_to_decimal_map = parameters['roman_to_decimal_map']
+        self.values = parameters['values']
+        self.symbols = parameters['symbols']
+
+    def convert(self, input):
+        if isinstance(input, int):
+            return self.decimal_to_roman(input)
+        elif isinstance(input, str):
+            return self.roman_to_decimal(input)
+
+    def roman_to_decimal(self, roman):
+        decimal = 0
+        i = 0
+        while i < len(roman):
+            if i + 1 < len(roman) and self.roman_to_decimal_map[roman[i]] < self.roman_to_decimal_map[roman[i+1]]:
+                decimal += self.roman_to_decimal_map[roman[i+1]] - self.roman_to_decimal_map[roman[i]]
+                i += 2
+            else:
+                decimal += self.roman_to_decimal_map[roman[i]]
+                i += 1
+        return decimal
+
+    def decimal_to_roman(self, num):
+        roman = ''
+        i = 0
+        while num > 0:
+            div = num // self.values[i]
+            num %= self.values[i]
+            roman += self.symbols[i] * div
+            i += 1
+        return roman
+
+class ConverterFactory:
+    def create_converter(self, type, parameter_file):
+        if type == 'RomanDecimal':
+            return RomanDecimalConverter(parameter_file)
+
+class ConverterDecorator(Converter):
+    def __init__(self, converter):
+        self.converter = converter
+
+    def convert(self, input):
+        print("Converting...")
+        result = self.converter.convert(input)
+        print("Conversion complete!")
+        return result
+
+factory = ConverterFactory()
+converter = factory.create_converter('RomanDecimal', 'Parameters.json')
+
+decorated_converter = ConverterDecorator(converter)
+
+print(decorated_converter.convert('IX'))
+print(decorated_converter.convert(9))
+
+# Unit tests
+class TestRomanDecimalConverter(unittest.TestCase):
+    def setUp(self):
+        self.converter = RomanDecimalConverter('Parameters.json')
+
+    def test_roman_to_decimal(self):
+        self.assertEqual(self.converter.roman_to_decimal('I'), 1)
+        self.assertEqual(self.converter.roman_to_decimal('IV'), 4)
+        self.assertEqual(self.converter.roman_to_decimal('IX'), 9)
+        self.assertEqual(self.converter.roman_to_decimal('LVIII'), 58)
+        self.assertEqual(self.converter.roman_to_decimal('MCMXCIV'), 1994)
+
+    def test_decimal_to_roman(self):
+        self.assertEqual(self.converter.decimal_to_roman(1), 'I')
+        self.assertEqual(self.converter.decimal_to_roman(4), 'IV')
+        self.assertEqual(self.converter.decimal_to_roman(9), 'IX')
+        self.assertEqual(self.converter.decimal_to_roman(58), 'LVIII')
+        self.assertEqual(self.converter.decimal_to_roman(1994), 'MCMXCIV')
+
+if __name__ == '__main__':
+    unittest.main(argv=[''], exit=False)
